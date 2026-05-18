@@ -1,4 +1,28 @@
+# 基础服务
 nginx:latest
+nginx:alpine
+busybox:latest
+
+# 数据库
 mysql:8.0
+mysql:latest
 redis:alpine
+redis:latest
+postgres:15
+mongo:latest
+
+# 消息队列/中间件
+rabbitmq:3-management
+nacos:v2.3.0
+
+# 开发语言环境
 node:18-alpine
+node:20-alpine
+python:3.11-slim
+python:3.12-slim
+openjdk:17-jdk-slim
+
+# 工具类
+alpine:latest
+centos:7
+ubuntu:22.04
