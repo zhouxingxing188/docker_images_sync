@@ -1,1 +1,4 @@
-
+nginx:latest
+mysql:8.0mysql:8.0
+redis:alpineredis:alpine
+node:18-alpinenode:18-alpine
