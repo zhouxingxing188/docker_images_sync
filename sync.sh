@@ -1,68 +1,62 @@
 #!/bin/bash
 set -e
 
-# 直接使用环境变量，不需要传参数
-IMAGES_FILE="images.txt"
-TARGET_REGISTRY="${DOCKER_REGISTRY}"
-TARGET_NAMESPACE="${DOCKER_NS}"
+# 阿里云镜像仓库配置（替换成你自己的）
+REGISTRY="registry.cn-hangzhou.aliyuncs.com"
+NAMESPACE="your-namespace"
 
-# 检查文件是否存在
-if [ ! -f "$IMAGES_FILE" ]; then
-    echo "错误：文件 $IMAGES_FILE 不存在"
-    exit 1
-fi
+# 统计成功和失败的镜像数量
+success=0
+failed=0
 
-failed_count=0
-failed_images=""
+echo "===== 开始同步Docker镜像 ====="
+echo "目标仓库: $REGISTRY/$NAMESPACE"
+echo "=============================="
 
-while IFS= read -r image; do
-    # 跳过空行
-    if [ -z "$image" ]; then
-        continue
-    fi
-
+# 读取镜像列表，过滤注释和空行
+grep -v '^#' images.txt | grep -v '^$' | while read -r image; do
+    echo ""
     echo "===== 正在处理镜像: $image ====="
-
-    # 拉取镜像
-    set +e
-    docker pull "$image"
-    pull_status=$?
-    set -e
-
-    if [ $pull_status -ne 0 ]; then
-        echo "Error: Failed to pull image $image, continuing..."
-        failed_count=$((failed_count + 1))
-        failed_images="$failed_images $image"
+    
+    # 拉取源镜像
+    if docker pull "$image"; then
+        echo "✅ 拉取成功: $image"
+    else
+        echo "❌ 拉取失败: $image"
+        ((failed++))
         continue
     fi
-
-    # 解析镜像名称和标签
-    name=$(echo "$image" | cut -d '/' -f2)
-    tag=$(echo "$name" | cut -d ':' -f2)
-    targetFullName="${TARGET_REGISTRY}/${TARGET_NAMESPACE}/${name}"
-
+    
+    # 构建目标镜像名
+    target_image="$REGISTRY/$NAMESPACE/$(echo "$image" | cut -d'/' -f2-)"
+    
     # 打标签
-    docker tag "$image" "$targetFullName"
-
-    # 推送到阿里云
-    set +e
-    docker push "$targetFullName"
-    push_status=$?
-    set -e
-
-    if [ $push_status -ne 0 ]; then
-        echo "Error: Failed to push image $targetFullName, continuing..."
-        failed_count=$((failed_count + 1))
-        failed_images="$failed_images $image"
-        continue
+    docker tag "$image" "$target_image"
+    
+    # 推送到目标仓库
+    if docker push "$target_image"; then
+        echo "✅ 推送成功: $target_image"
+        ((success++))
+    else
+        echo "❌ 推送失败: $target_image"
+        ((failed++))
     fi
+    
+    # 清理本地镜像（可选，节省空间）
+    docker rmi "$image" "$target_image" > /dev/null 2>&1
+done
 
-    echo "✅ 镜像 $image 同步完成！"
-done < "$IMAGES_FILE"
+echo ""
+echo "===== 同步完成 ====="
+echo "成功: $success 个"
+echo "失败: $failed 个"
+echo "===================="
 
-if [ $failed_count -gt 0 ]; then
-    echo "Error: Failed to sync $failed_count images: $failed_images"
+# 只有当所有镜像都失败时才返回非零退出码
+if [ $success -eq 0 ] && [ $failed -gt 0 ]; then
+    echo "❌ 所有镜像同步失败！"
     exit 1
+else
+    echo "✅ 同步任务完成！"
+    exit 0
 fi
-
-echo "🎉 所有镜像同步任务已成功完成！"
