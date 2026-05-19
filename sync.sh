@@ -1,9 +1,8 @@
 #!/bin/bash
-set -e
 
-# 阿里云镜像仓库配置（保持你原来的配置不变）
+# 阿里云镜像仓库配置（已替换为你的真实命名空间）
 REGISTRY="registry.cn-hangzhou.aliyuncs.com"
-NAMESPACE="your-namespace"  # 替换成你自己的命名空间
+NAMESPACE="my_docker_zxy"
 
 # 统计成功和失败的镜像数量
 success=0
@@ -56,11 +55,11 @@ echo "✅ 成功: $success 个"
 echo "❌ 失败: $failed 个"
 echo "========================"
 
-# 只有当所有镜像都失败时才返回非零退出码（优化错误处理）
-if [ $success -eq 0 ] && [ $failed -gt 0 ]; then
-    echo "❌ 所有镜像同步失败！"
-    exit 1
-else
+# 只要有一个镜像成功，就返回成功状态码
+if [ $success -gt 0 ]; then
     echo "✅ 同步任务完成！"
     exit 0
+else
+    echo "❌ 所有镜像同步失败！"
+    exit 1
 fi
