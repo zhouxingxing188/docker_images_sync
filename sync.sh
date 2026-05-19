@@ -12,8 +12,8 @@ echo "===== 开始同步Docker镜像 ====="
 echo "目标仓库: ${TARGET_REGISTRY}/${NAMESPACE}"
 echo "=============================="
 
-# 读取镜像列表，跳过注释与空行
-grep -v '^#' images.txt | grep -v '^$' | while read -r image;do
+# 修复：用 process substitution 代替管道符，避免子shell变量丢失
+while read -r image;do
     echo ""
     echo "===== 正在处理镜像: ${image} ====="
 
@@ -47,7 +47,7 @@ grep -v '^#' images.txt | grep -v '^$' | while read -r image;do
 
     # 清理本地镜像
     docker rmi "${image}" "${target_image}" > /dev/null 2>&1
-done
+done < <(grep -v '^#' images.txt | grep -v '^$')  # 关键修复：重定向输入，不创建子shell
 
 echo ""
 echo "===== 同步任务完成 ====="
