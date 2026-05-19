@@ -1,24 +1,25 @@
 name: Sync Docker Image 同步Docker镜像
 
 on:
-  workflow_dispatch:  # 手动触发按钮（关键！添加后会出现Run workflow按钮）
+  workflow_dispatch: # 手动触发按钮（关键！添加后会出现Run workflow按钮）
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'  # 每天UTC 0点自动同步
+    - cron: '0 0 * * *' # 每天UTC 0点自动同步
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # 新增：设置超时时间为10分钟，避免挂死
     steps:
       - name: 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0  # 更新到最新版本，消除弃用警告
 
       - name: 配置Docker环境
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.7.1  # 更新到最新版本
 
       - name: 登录阿里云镜像仓库
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.3.0  # 更新到最新版本
         with:
           registry: ${{ secrets.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USER }}
@@ -29,5 +30,6 @@ jobs:
           chmod +x sync.sh
           ./sync.sh
         env:
-          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          DOCKER_NS: ${{ secrets.DOCKER_NS }}
+          # 可选：把仓库配置作为环境变量传给脚本，和sync.sh里的变量对应
+          REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          NAMESPACE: your-namespace  # 替换成你自己的命名空间
