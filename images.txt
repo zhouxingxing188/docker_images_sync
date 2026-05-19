@@ -13,7 +13,7 @@ mongo:latest
 
 # 消息队列/中间件
 rabbitmq:3-management
-nacos:v2.3.0
+nacos/nacos-server:v2.3.0
 
 # 开发语言环境
 node:18-alpine
