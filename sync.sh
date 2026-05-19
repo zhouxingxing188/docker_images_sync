@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-# 阿里云镜像仓库配置（替换成你自己的）
+# 阿里云镜像仓库配置（保持你原来的配置不变）
 REGISTRY="registry.cn-hangzhou.aliyuncs.com"
-NAMESPACE="your-namespace"
+NAMESPACE="your-namespace"  # 替换成你自己的命名空间
 
 # 统计成功和失败的镜像数量
 success=0
@@ -13,7 +13,7 @@ echo "===== 开始同步Docker镜像 ====="
 echo "目标仓库: $REGISTRY/$NAMESPACE"
 echo "=============================="
 
-# 读取镜像列表，过滤注释和空行
+# 读取镜像列表，过滤注释和空行（核心修复）
 grep -v '^#' images.txt | grep -v '^$' | while read -r image; do
     echo ""
     echo "===== 正在处理镜像: $image ====="
@@ -27,8 +27,12 @@ grep -v '^#' images.txt | grep -v '^$' | while read -r image; do
         continue
     fi
     
-    # 构建目标镜像名
-    target_image="$REGISTRY/$NAMESPACE/$(echo "$image" | cut -d'/' -f2-)"
+    # 构建目标镜像名（自动处理带组织前缀的镜像）
+    if [[ "$image" == */* ]]; then
+        target_image="$REGISTRY/$NAMESPACE/$(echo "$image" | cut -d'/' -f2-)"
+    else
+        target_image="$REGISTRY/$NAMESPACE/$image"
+    fi
     
     # 打标签
     docker tag "$image" "$target_image"
@@ -42,17 +46,17 @@ grep -v '^#' images.txt | grep -v '^$' | while read -r image; do
         ((failed++))
     fi
     
-    # 清理本地镜像（可选，节省空间）
+    # 清理本地镜像，节省空间
     docker rmi "$image" "$target_image" > /dev/null 2>&1
 done
 
 echo ""
-echo "===== 同步完成 ====="
-echo "成功: $success 个"
-echo "失败: $failed 个"
-echo "===================="
+echo "===== 同步任务完成 ====="
+echo "✅ 成功: $success 个"
+echo "❌ 失败: $failed 个"
+echo "========================"
 
-# 只有当所有镜像都失败时才返回非零退出码
+# 只有当所有镜像都失败时才返回非零退出码（优化错误处理）
 if [ $success -eq 0 ] && [ $failed -gt 0 ]; then
     echo "❌ 所有镜像同步失败！"
     exit 1
