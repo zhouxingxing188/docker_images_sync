@@ -32,4 +32,4 @@ jobs:
         env:
           # 可选：把仓库配置作为环境变量传给脚本，和sync.sh里的变量对应
           REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          NAMESPACE: your-namespace  # 替换成你自己的命名空间
+          NAMESPACE: ${{ secrets.DOCKER_NS }}  # 补充这一行，传递你的命名空间
